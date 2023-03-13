@@ -88,10 +88,13 @@ stripped_q_model = quantized_model.controller.prepare_for_inference(make_model_c
 
 print("Compiling quantized model")
 #with no_nncf_trace():
-trt_model_int8 = torch_tensorrt.compile(stripped_q_model, inputs = [torch_tensorrt.Input((128, 3, 224, 224), dtype=torch.float)],
-    enabled_precisions = {torch.int8}, 
-    workspace_size = 1 << 22
-)
+# trt_model_int8 = torch_tensorrt.compile(stripped_q_model, inputs = [torch_tensorrt.Input((128, 3, 224, 224), dtype=torch.float)],
+#     enabled_precisions = {torch.int8}, 
+#     workspace_size = 1 << 22,
+# )
+trt_model_int8 = torch_tensorrt.compile(stripped_q_model, inputs = [torch.rand((128, 3, 224, 224), dtype=torch.float).cuda()],
+     ir = "fx")
+
 
 print("Benchmarking quantized model")
 benchmark(trt_model_int8, input_shape=(128, 3, 224, 224), nruns=100)
