@@ -8,6 +8,7 @@ import torch.backends.cudnn as cudnn
 from pathlib import Path
 from torchvision import datasets, transforms
 from fastdownload import FastDownload
+from nncf.torch.dynamic_graph.context import no_nncf_trace
 
 efficientnet_b0_model = timm.create_model('efficientnet_b0',pretrained=True)
 model = efficientnet_b0_model.eval().to("cuda")
@@ -83,8 +84,11 @@ def quantize_model(model):
 print("Quantizing model")
 quantized_model = quantize_model(model)
 
+stripped_q_model = quantized_model.controller.prepare_for_inference(make_model_copy=False) # NNCF quantize_impl for torch should be patched to get the controller
+
 print("Compiling quantized model")
-trt_model_int8 = torch_tensorrt.compile(quantized_model, inputs = [torch_tensorrt.Input((128, 3, 224, 224), dtype=torch.float)],
+#with no_nncf_trace():
+trt_model_int8 = torch_tensorrt.compile(stripped_q_model, inputs = [torch_tensorrt.Input((128, 3, 224, 224), dtype=torch.float)],
     enabled_precisions = {torch.int8}, 
     workspace_size = 1 << 22
 )
